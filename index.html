@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보드에바나나 · 파티 등록</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --felt:#1F4D36;
+    --felt-light:#2A5F42;
+    --wood:#8B5A2E;
+    --wood-dark:#6B4423;
+    --cream:#F3E9D2;
+    --cream-dim:#E8DBBB;
+    --ink:#2B2420;
+    --ink-soft:#5A4F42;
+    --dice-red:#C1443C;
+    --gold:#C9A24C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:'Noto Sans KR',sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,0.05) 2px, transparent 2px) 0 0/28px 28px,
+      radial-gradient(circle at 60% 60%, rgba(255,255,255,0.04) 2px, transparent 2px) 14px 14px/28px 28px,
+      linear-gradient(160deg, var(--felt) 0%, var(--felt-light) 100%);
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:32px 16px 64px;
+  }
+  .tile-card{
+    width:100%;
+    max-width:440px;
+    background:var(--cream);
+    border:4px solid var(--wood);
+    border-radius:18px;
+    box-shadow:0 18px 40px rgba(0,0,0,0.35), inset 0 0 0 2px rgba(201,162,76,0.5);
+    padding:24px 22px 28px;
+    position:relative;
+  }
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:18px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .die-icon{
+    width:34px;height:34px;
+    background:var(--dice-red);
+    border-radius:8px;
+    position:relative;
+    box-shadow:inset 0 -3px 0 rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.3);
+    flex-shrink:0;
+  }
+  .die-icon .pip{
+    position:absolute;width:5px;height:5px;background:var(--cream);border-radius:50%;
+  }
+  .die-icon .p1{top:6px;left:6px;} .die-icon .p2{top:6px;right:6px;}
+  .die-icon .p3{top:50%;left:50%;transform:translate(-50%,-50%);}
+  .die-icon .p4{bottom:6px;left:6px;} .die-icon .p5{bottom:6px;right:6px;}
+  h1{
+    font-family:'Jua',sans-serif;
+    font-size:22px;
+    margin:0;
+    color:var(--wood-dark);
+    letter-spacing:-0.5px;
+  }
+  .subtitle{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .gear-btn{
+    background:none;border:none;cursor:pointer;
+    font-size:20px;
+    padding:6px;
+    border-radius:8px;
+    color:var(--ink-soft);
+    line-height:1;
+  }
+  .gear-btn:hover{background:rgba(0,0,0,0.06);}
+  .gear-btn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible{
+    outline:3px solid var(--gold); outline-offset:2px;
+  }
+
+  #settingsPanel{
+    background:var(--cream-dim);
+    border:2px dashed var(--wood);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:18px;
+  }
+  #settingsPanel h2{
+    font-family:'Jua',sans-serif;
+    font-size:15px;
+    margin:0 0 10px;
+    color:var(--wood-dark);
+  }
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:700;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  input[type=text], input[type=date], input[type=number], select{
+    width:100%;
+    padding:10px 12px;
+    border:2px solid var(--cream-dim);
+    background:#fff;
+    border-radius:8px;
+    font-size:14px;
+    font-family:inherit;
+    color:var(--ink);
+  }
+  #settingsPanel input[type=text]{border-color:#d8c9a0;}
+  .hint{font-size:11px;color:var(--ink-soft);margin-top:4px;line-height:1.5;}
+  .party-list{list-style:none;margin:10px 0 0;padding:0;}
+  .party-list li{
+    display:flex;align-items:center;gap:8px;
+    background:#fff;
+    border-radius:8px;
+    padding:8px 10px;
+    margin-bottom:6px;
+    font-size:13px;
+  }
+  .party-list li .pname{flex:1;font-weight:700;}
+  .party-list li input[type=number]{width:60px;padding:4px 6px;font-size:13px;}
+  .party-list li button{
+    background:none;border:none;color:var(--dice-red);cursor:pointer;font-size:16px;padding:2px 6px;
+  }
+  .add-party-row{display:flex;gap:6px;margin-top:10px;}
+  .add-party-row input[type=text]{flex:1;}
+  .add-party-row input[type=number]{width:70px;}
+  .small-btn{
+    background:var(--wood);color:#fff;border:none;border-radius:8px;
+    padding:9px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  .small-btn:hover{background:var(--wood-dark);}
+
+  .party-select-row{display:flex;gap:8px;align-items:flex-end;}
+  .party-select-row select{flex:1;}
+  .icon-btn{
+    background:var(--cream-dim);
+    border:2px solid var(--wood);
+    color:var(--wood-dark);
+    border-radius:8px;
+    width:42px;height:42px;
+    font-size:18px;font-weight:700;
+    cursor:pointer;
+  }
+  .icon-btn:hover{background:var(--wood);color:#fff;}
+
+  .slot-options{display:flex;gap:8px;flex-wrap:wrap;}
+  .slot-option{
+    flex:1;min-width:120px;
+    border:2px solid var(--cream-dim);
+    background:#fff;
+    border-radius:10px;
+    padding:10px;
+    cursor:pointer;
+    text-align:center;
+    font-size:13px;
+    font-weight:700;
+  }
+  .slot-option.selected{
+    border-color:var(--dice-red);
+    background:#FBEAE8;
+    color:var(--dice-red);
+  }
+  .slot-fixed{
+    border:2px solid var(--cream-dim);
+    background:#fff;
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  .nameplate{
+    margin-top:18px;
+    background:var(--ink);
+    border-radius:10px;
+    padding:16px 14px;
+    text-align:center;
+    box-shadow:inset 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .nameplate-label{
+    font-size:10px;
+    letter-spacing:1.5px;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  .nameplate-title{
+    font-family:'Jua',sans-serif;
+    font-size:18px;
+    color:var(--cream);
+    word-break:break-all;
+  }
+
+  .submit-btn{
+    width:100%;
+    margin-top:18px;
+    background:var(--dice-red);
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    padding:15px;
+    font-size:15px;
+    font-weight:700;
+    font-family:'Noto Sans KR',sans-serif;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    box-shadow:0 4px 0 #93332C;
+    transition:transform 0.05s;
+  }
+  .submit-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #93332C;}
+  .submit-btn:disabled{opacity:0.6;cursor:default;}
+  .submit-btn .die-icon{width:20px;height:20px;background:var(--cream);}
+  .submit-btn .die-icon .pip{background:var(--dice-red);width:3px;height:3px;}
+  .submit-btn.loading .die-icon{animation:spin 0.6s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){
+    .submit-btn.loading .die-icon{animation:none;}
+  }
+
+  #statusMsg{
+    margin-top:14px;
+    font-size:13px;
+    text-align:center;
+    line-height:1.6;
+  }
+  #statusMsg.ok{color:#1F4D36;font-weight:700;}
+  #statusMsg.err{color:var(--dice-red);font-weight:700;}
+  #statusMsg a{color:var(--wood-dark);}
+
+  .empty-state{
+    font-size:12px;
+    color:var(--ink-soft);
+    background:var(--cream-dim);
+    border-radius:8px;
+    padding:10px;
+    margin-top:6px;
+  }
+</style>
+</head>
+<body>
+  <main class="tile-card">
+    <header>
+      <div class="brand">
+        <div class="die-icon"><span class="pip p1"></span><span class="pip p2"></span><span class="pip p3"></span><span class="pip p4"></span><span class="pip p5"></span></div>
+        <div>
+          <h1>보드에바나나</h1>
+          <div class="subtitle">파티 일정, 캘린더에 한 번에 등록</div>
+        </div>
+      </div>
+      <button type="button" class="gear-btn" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel" title="설정">⚙️</button>
+    </header>
+
+    <section id="settingsPanel" hidden>
+      <h2>연동 설정</h2>
+      <div class="field">
+        <label for="clientIdInput">구글 OAuth 클라이언트 ID</label>
+        <input type="text" id="clientIdInput" placeholder="xxxxxx.apps.googleusercontent.com">
+        <div class="hint">Google Cloud Console에서 발급받은 웹 애플리케이션용 클라이언트 ID를 붙여넣으세요. 이 값은 이 브라우저에만 저장됩니다.</div>
+      </div>
+
+      <h2 style="margin-top:18px;">파티 목록 &amp; 회차</h2>
+      <ul class="party-list" id="partyList"></ul>
+      <div class="add-party-row">
+        <input type="text" id="newPartyName" placeholder="새 파티 이름">
+        <input type="number" id="newPartyCount" placeholder="현재 회차" value="0" min="0">
+        <button type="button" class="small-btn" id="addPartyBtn">추가</button>
+      </div>
+      <div class="hint">회차는 "다음 등록 시 매길 번호 − 1"이에요. 예를 들어 4까지 진행했다면 4를 입력하세요. 다음 등록 시 자동으로 5가 됩니다.</div>
+    </section>
+
+    <form id="partyForm">
+      <div class="field">
+        <label for="partySelect">파티 선택</label>
+        <div class="party-select-row">
+          <select id="partySelect"></select>
+          <button type="button" class="icon-btn" id="focusAddParty" title="새 파티 추가">＋</button>
+        </div>
+        <div class="empty-state" id="noPartyHint" hidden>등록된 파티가 없어요. ⚙️ 설정에서 먼저 파티를 추가해주세요.</div>
+      </div>
+
+      <div class="field">
+        <label for="dateInput">날짜</label>
+        <input type="date" id="dateInput" required>
+      </div>
+
+      <div class="field" id="slotField">
+        <label id="slotLabel">시간</label>
+        <div id="slotContainer"></div>
+      </div>
+
+      <div class="nameplate">
+        <div class="nameplate-label">캘린더 등록 제목</div>
+        <div class="nameplate-title" id="titlePreview">파티를 선택해주세요</div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">
+        <span class="die-icon"><span class="pip p1"></span><span class="pip p2"></span><span class="pip p3"></span><span class="pip p4"></span><span class="pip p5"></span></span>
+        <span id="submitLabel">구글 캘린더에 등록</span>
+      </button>
+
+      <div id="statusMsg" role="status" aria-live="polite"></div>
+    </form>
+  </main>
+
+<script>
+(function(){
+  const LS_CLIENT_ID = 'bp_client_id';
+  const LS_PARTIES = 'bp_parties';
+  const TITLE_PREFIX = '보드에바나나';
+  const TIMEZONE = 'Asia/Seoul';
+  const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+
+  // ---- state ----
+  let parties = JSON.parse(localStorage.getItem(LS_PARTIES) || '[]'); // [{name, count}]
+  let selectedSlotIndex = 0;
+  let tokenClient = null;
+  let accessToken = null;
+
+  // ---- elements ----
+  const settingsToggle = document.getElementById('settingsToggle');
+  const settingsPanel = document.getElementById('settingsPanel');
+  const clientIdInput = document.getElementById('clientIdInput');
+  const partyListEl = document.getElementById('partyList');
+  const newPartyName = document.getElementById('newPartyName');
+  const newPartyCount = document.getElementById('newPartyCount');
+  const addPartyBtn = document.getElementById('addPartyBtn');
+  const focusAddParty = document.getElementById('focusAddParty');
+  const partySelect = document.getElementById('partySelect');
+  const noPartyHint = document.getElementById('noPartyHint');
+  const dateInput = document.getElementById('dateInput');
+  const slotContainer = document.getElementById('slotContainer');
+  const slotLabel = document.getElementById('slotLabel');
+  const titlePreview = document.getElementById('titlePreview');
+  const partyForm = document.getElementById('partyForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const submitLabel = document.getElementById('submitLabel');
+  const statusMsg = document.getElementById('statusMsg');
+
+  // ---- init ----
+  clientIdInput.value = localStorage.getItem(LS_CLIENT_ID) || '';
+  const today = new Date();
+  dateInput.value = today.toISOString().slice(0,10);
+
+  function saveParties(){ localStorage.setItem(LS_PARTIES, JSON.stringify(parties)); }
+  function saveClientId(){ localStorage.setItem(LS_CLIENT_ID, clientIdInput.value.trim()); }
+
+  function renderPartyManager(){
+    partyListEl.innerHTML = '';
+    parties.forEach((p, idx) => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span class="pname">${escapeHtml(p.name)}</span>
+        <input type="number" min="0" value="${p.count}" data-idx="${idx}" class="count-input">
+        <button type="button" data-idx="${idx}" class="del-btn" title="삭제">✕</button>
+      `;
+      partyListEl.appendChild(li);
+    });
+    partyListEl.querySelectorAll('.count-input').forEach(inp => {
+      inp.addEventListener('change', e => {
+        const idx = +e.target.dataset.idx;
+        parties[idx].count = Math.max(0, parseInt(e.target.value) || 0);
+        saveParties();
+        renderPartySelect();
+        updateTitlePreview();
+      });
+    });
+    partyListEl.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const idx = +e.target.dataset.idx;
+        if (confirm(`"${parties[idx].name}" 파티를 목록에서 삭제할까요?`)) {
+          parties.splice(idx,1);
+          saveParties();
+          renderPartyManager();
+          renderPartySelect();
+          updateTitlePreview();
+        }
+      });
+    });
+  }
+
+  function renderPartySelect(){
+    const prev = partySelect.value;
+    partySelect.innerHTML = '';
+    if (parties.length === 0){
+      noPartyHint.hidden = false;
+      partySelect.disabled = true;
+      return;
+    }
+    noPartyHint.hidden = true;
+    partySelect.disabled = false;
+    parties.forEach((p, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.textContent = `${p.name} (${p.count}회 진행됨)`;
+      partySelect.appendChild(opt);
+    });
+    if (prev !== '' && +prev < parties.length) partySelect.value = prev;
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  addPartyBtn.addEventListener('click', () => {
+    const name = newPartyName.value.trim();
+    if (!name) { newPartyName.focus(); return; }
+    const count = Math.max(0, parseInt(newPartyCount.value) || 0);
+    parties.push({ name, count });
+    saveParties();
+    newPartyName.value = '';
+    newPartyCount.value = '0';
+    renderPartyManager();
+    renderPartySelect();
+    updateTitlePreview();
+  });
+
+  focusAddParty.addEventListener('click', () => {
+    settingsPanel.hidden = false;
+    settingsToggle.setAttribute('aria-expanded','true');
+    newPartyName.focus();
+  });
+
+  settingsToggle.addEventListener('click', () => {
+    const isHidden = settingsPanel.hidden;
+    settingsPanel.hidden = !isHidden;
+    settingsToggle.setAttribute('aria-expanded', String(isHidden));
+  });
+
+  clientIdInput.addEventListener('change', saveClientId);
+
+  // ---- time slot logic ----
+  function getSlotsForDate(dateStr){
+    const d = new Date(dateStr + 'T00:00:00');
+    const day = d.getDay(); // 0 Sun ... 6 Sat
+    const isWeekend = (day === 0 || day === 6);
+    if (!isWeekend){
+      return [{ label: '평일 저녁 · 19:30 ~ 22:30', start: '19:30', end: '22:30' }];
+    }
+    return [
+      { label: '주말 점심 · 12:30 ~ 15:30', start: '12:30', end: '15:30' },
+      { label: '주말 저녁 · 18:30 ~ 21:30', start: '18:30', end: '21:30' }
+    ];
+  }
+
+  function renderSlots(){
+    const slots = getSlotsForDate(dateInput.value);
+    slotContainer.innerHTML = '';
+    if (slots.length === 1){
+      slotLabel.textContent = '시간 (평일 고정)';
+      const div = document.createElement('div');
+      div.className = 'slot-fixed';
+      div.textContent = slots[0].label;
+      slotContainer.appendChild(div);
+      selectedSlotIndex = 0;
+    } else {
+      slotLabel.textContent = '시간 (주말: 점심 또는 저녁 선택)';
+      const wrap = document.createElement('div');
+      wrap.className = 'slot-options';
+      slots.forEach((s, idx) => {
+        const opt = document.createElement('div');
+        opt.className = 'slot-option' + (idx === selectedSlotIndex ? ' selected' : '');
+        opt.textContent = s.label;
+        opt.addEventListener('click', () => {
+          selectedSlotIndex = idx;
+          renderSlots();
+        });
+        wrap.appendChild(opt);
+      });
+      slotContainer.appendChild(wrap);
+      if (selectedSlotIndex >= slots.length) selectedSlotIndex = 0;
+    }
+    currentSlots = slots;
+  }
+  let currentSlots = [];
+
+  dateInput.addEventListener('change', () => { selectedSlotIndex = 0; renderSlots(); });
+
+  // ---- title preview ----
+  function updateTitlePreview(){
+    if (parties.length === 0 || partySelect.value === ''){
+      titlePreview.textContent = '파티를 선택해주세요';
+      return;
+    }
+    const p = parties[+partySelect.value];
+    titlePreview.textContent = `${TITLE_PREFIX}_${p.name}_${p.count + 1}`;
+  }
+  partySelect.addEventListener('change', updateTitlePreview);
+
+  // ---- google oauth ----
+  function getClientId(){ return localStorage.getItem(LS_CLIENT_ID) || clientIdInput.value.trim(); }
+
+  function ensureTokenClient(){
+    const clientId = getClientId();
+    if (!clientId){ throw new Error('NO_CLIENT_ID'); }
+    if (!tokenClient || tokenClient.__clientId !== clientId){
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: SCOPE,
+        callback: () => {}
+      });
+      tokenClient.__clientId = clientId;
+    }
+  }
+
+  function getAccessToken(){
+    return new Promise((resolve, reject) => {
+      try { ensureTokenClient(); } catch(e){ reject(e); return; }
+      tokenClient.callback = (resp) => {
+        if (resp.error){ reject(resp); return; }
+        accessToken = resp.access_token;
+        resolve(accessToken);
+      };
+      tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' });
+    });
+  }
+
+  async function insertCalendarEvent(title, dateStr, startTime, endTime){
+    const token = await getAccessToken();
+    const event = {
+      summary: title,
+      start: { dateTime: `${dateStr}T${startTime}:00`, timeZone: TIMEZONE },
+      end:   { dateTime: `${dateStr}T${endTime}:00`, timeZone: TIMEZONE }
+    };
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(event)
+    });
+    if (!res.ok){
+      const text = await res.text();
+      const err = new Error('CALENDAR_API_ERROR');
+      err.detail = text;
+      err.status = res.status;
+      throw err;
+    }
+    return res.json();
+  }
+
+  // ---- submit ----
+  partyForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    statusMsg.textContent = '';
+    statusMsg.className = '';
+
+    if (parties.length === 0 || partySelect.value === ''){
+      statusMsg.textContent = '먼저 파티를 선택하거나 추가해주세요.';
+      statusMsg.className = 'err';
+      return;
+    }
+    if (!getClientId()){
+      statusMsg.textContent = '⚙️ 설정에서 구글 OAuth 클라이언트 ID를 먼저 입력해주세요.';
+      statusMsg.className = 'err';
+      settingsPanel.hidden = false;
+      settingsToggle.setAttribute('aria-expanded','true');
+      return;
+    }
+
+    const idx = +partySelect.value;
+    const party = parties[idx];
+    const nextCount = party.count + 1;
+    const title = `${TITLE_PREFIX}_${party.name}_${nextCount}`;
+    const slot = currentSlots[selectedSlotIndex];
+
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    submitLabel.textContent = '등록 중...';
+
+    try {
+      const result = await insertCalendarEvent(title, dateInput.value, slot.start, slot.end);
+      party.count = nextCount;
+      saveParties();
+      renderPartyManager();
+      renderPartySelect();
+      partySelect.value = idx;
+      updateTitlePreview();
+
+      statusMsg.className = 'ok';
+      statusMsg.innerHTML = `등록 완료: "${escapeHtml(title)}"` +
+        (result.htmlLink ? ` · <a href="${result.htmlLink}" target="_blank" rel="noopener">캘린더에서 보기</a>` : '');
+    } catch(err){
+      if (err && err.message === 'NO_CLIENT_ID'){
+        statusMsg.textContent = '⚙️ 설정에서 구글 OAuth 클라이언트 ID를 먼저 입력해주세요.';
+      } else if (err && err.error === 'popup_closed_by_user'){
+        statusMsg.textContent = '로그인 창이 닫혔어요. 다시 시도해주세요.';
+      } else {
+        statusMsg.textContent = '등록하지 못했어요. 클라이언트 ID와 승인된 원본 설정을 확인한 뒤 다시 시도해주세요.';
+        console.error(err);
+      }
+      statusMsg.className = 'err';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('loading');
+      submitLabel.textContent = '구글 캘린더에 등록';
+    }
+  });
+
+  // ---- boot ----
+  renderPartyManager();
+  renderPartySelect();
+  renderSlots();
+  updateTitlePreview();
+})();
+</script>
+</body>
+</html>
