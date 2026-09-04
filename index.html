@@ -437,15 +437,12 @@
   async function insertCalendarEvent(title, dateStr, startTime, endTime) {
     const url = getScriptUrl();
     if (!url) throw new Error('NO_SCRIPT_URL');
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        title,
-        start: `${dateStr}T${startTime}:00+09:00`,
-        end:   `${dateStr}T${endTime}:00+09:00`
-      })
+    const params = new URLSearchParams({
+      title,
+      start: `${dateStr}T${startTime}:00+09:00`,
+      end:   `${dateStr}T${endTime}:00+09:00`
     });
+    const res = await fetch(`${url}?${params}`);
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'SCRIPT_ERROR');
     return data;
