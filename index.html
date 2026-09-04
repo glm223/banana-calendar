@@ -11,22 +11,22 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root {
-    --bg: #FFFEF5;
-    --surface: #FFFFFF;
-    --border: #F0EBD0;
-    --border-focus: #E2C84B;
-    --text: #18181B;
-    --text-sub: #78716C;
-    --text-placeholder: #C4B87A;
-    --accent: #F0C330;
-    --accent-hover: #DEB020;
-    --accent-text: #18181B;
-    --danger: #EF4444;
-    --success: #16A34A;
+    --bg: #FAF6EE;
+    --surface: #FAF6EE;
+    --border: #EDE5D4;
+    --border-focus: #D4B878;
+    --text: #2E2416;
+    --text-sub: #C0A87A;
+    --text-placeholder: #D4C090;
+    --accent: #ECC030;
+    --accent-hover: #D4A820;
+    --accent-text: #2E2416;
+    --danger: #C0503A;
+    --success: #4A8040;
     --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+    --radius-md: 10px;
+    --radius-lg: 18px;
+    --shadow-md: none;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
@@ -45,9 +45,9 @@
     width: 100%;
     max-width: 420px;
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: none;
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
+    box-shadow: none;
     overflow: hidden;
   }
 
@@ -100,16 +100,16 @@
     color: var(--text-sub); margin-bottom: 6px; letter-spacing: 0.2px;
   }
   input[type=text], input[type=date], input[type=number], select {
-    width: 100%; padding: 9px 12px;
-    border: 1px solid var(--border); background: var(--surface);
-    border-radius: var(--radius-sm); font-size: 14px;
+    width: 100%; padding: 8px 0;
+    border: none; border-bottom: 1px solid var(--border);
+    background: transparent;
+    border-radius: 0; font-size: 14px;
     font-family: inherit; color: var(--text); appearance: none;
-    transition: border-color 0.15s, box-shadow 0.15s; outline: none;
+    transition: border-color 0.15s; outline: none;
   }
   input[type=text]:focus, input[type=date]:focus,
   input[type=number]:focus, select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(63,63,70,0.08);
+    border-bottom-color: var(--accent);
   }
   ::placeholder { color: var(--text-placeholder); }
   .hint { font-size: 11px; color: var(--text-sub); margin-top: 5px; line-height: 1.6; }
@@ -167,14 +167,15 @@
   .slot-option:hover { border-color: var(--border-focus); color: var(--text); }
   .slot-option.selected { border-color: var(--accent-hover); background: var(--accent); color: var(--accent-text); }
   .slot-fixed {
-    padding: 10px 12px; background: var(--bg);
-    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 0;
+    background: transparent; border: none;
     font-size: 13px; font-weight: 600; color: var(--text-sub);
   }
 
   .preview-box {
-    padding: 14px 16px; background: var(--bg);
-    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    background: transparent;
     display: flex; align-items: center; gap: 10px;
   }
   .preview-label { font-size: 11px; font-weight: 600; color: var(--text-sub); white-space: nowrap; }
