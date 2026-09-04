@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>* { font-family: 'Noto Sans KR', -apple-system, sans-serif !important; }</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root {
     --bg: #F0EBE0;
@@ -225,11 +226,11 @@
 
   <section id="settingsPanel" hidden>
     <div class="settings-block">
-      <div class="settings-section-title">Apps Script 연결</div>
+      <div class="settings-section-title">Google OAuth</div>
       <div class="field">
-        <label for="scriptUrlInput">웹 앱 URL</label>
-        <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
-        <div class="hint">Google Apps Script 배포 후 받은 웹 앱 URL을 붙여넣으세요. 이 브라우저에만 저장됩니다.</div>
+        <label for="clientIdInput">클라이언트 ID</label>
+        <input type="text" id="clientIdInput" placeholder="xxxxxx.apps.googleusercontent.com">
+        <div class="hint">Google Cloud Console에서 발급한 웹 앱용 클라이언트 ID. 이 브라우저에만 저장됩니다.</div>
       </div>
     </div>
     <div class="settings-block">
@@ -283,39 +284,44 @@
 
 <script>
 (function(){
-  const LS_SCRIPT_URL = 'bp_script_url';
-  const LS_PARTIES    = 'bp_parties';
-  const TITLE_PREFIX  = '보드에바나나';
+  const LS_CLIENT_ID = 'bp_client_id';
+  const LS_PARTIES   = 'bp_parties';
+  const TITLE_PREFIX = '보드에바나나';
+  const TIMEZONE     = 'Asia/Seoul';
+  const SCOPE        = 'https://www.googleapis.com/auth/calendar.events';
+  const CALENDAR_ID  = 'b2fafc4sji8pj9mh4i0htouks4@group.calendar.google.com';
 
   let parties = JSON.parse(localStorage.getItem(LS_PARTIES) || '[]');
   let selectedSlotIndex = 0;
+  let tokenClient = null;
+  let accessToken  = null;
   let currentSlots = [];
 
-  const settingsToggle  = document.getElementById('settingsToggle');
-  const settingsPanel   = document.getElementById('settingsPanel');
-  const scriptUrlInput  = document.getElementById('scriptUrlInput');
-  const partyListEl     = document.getElementById('partyList');
-  const newPartyName    = document.getElementById('newPartyName');
-  const newPartyCount   = document.getElementById('newPartyCount');
-  const addPartyBtn     = document.getElementById('addPartyBtn');
-  const focusAddParty   = document.getElementById('focusAddParty');
-  const partySelect     = document.getElementById('partySelect');
-  const noPartyHint     = document.getElementById('noPartyHint');
-  const dateInput       = document.getElementById('dateInput');
-  const slotContainer   = document.getElementById('slotContainer');
-  const slotLabel       = document.getElementById('slotLabel');
-  const titlePreview    = document.getElementById('titlePreview');
-  const partyForm       = document.getElementById('partyForm');
-  const submitBtn       = document.getElementById('submitBtn');
-  const submitLabel     = document.getElementById('submitLabel');
-  const statusMsg       = document.getElementById('statusMsg');
+  const settingsToggle = document.getElementById('settingsToggle');
+  const settingsPanel  = document.getElementById('settingsPanel');
+  const clientIdInput  = document.getElementById('clientIdInput');
+  const partyListEl    = document.getElementById('partyList');
+  const newPartyName   = document.getElementById('newPartyName');
+  const newPartyCount  = document.getElementById('newPartyCount');
+  const addPartyBtn    = document.getElementById('addPartyBtn');
+  const focusAddParty  = document.getElementById('focusAddParty');
+  const partySelect    = document.getElementById('partySelect');
+  const noPartyHint    = document.getElementById('noPartyHint');
+  const dateInput      = document.getElementById('dateInput');
+  const slotContainer  = document.getElementById('slotContainer');
+  const slotLabel      = document.getElementById('slotLabel');
+  const titlePreview   = document.getElementById('titlePreview');
+  const partyForm      = document.getElementById('partyForm');
+  const submitBtn      = document.getElementById('submitBtn');
+  const submitLabel    = document.getElementById('submitLabel');
+  const statusMsg      = document.getElementById('statusMsg');
 
-  scriptUrlInput.value = localStorage.getItem(LS_SCRIPT_URL) || '';
+  clientIdInput.value = localStorage.getItem(LS_CLIENT_ID) || '';
   dateInput.value = new Date().toISOString().slice(0, 10);
 
-  function saveParties()    { localStorage.setItem(LS_PARTIES, JSON.stringify(parties)); }
-  function saveScriptUrl()  { localStorage.setItem(LS_SCRIPT_URL, scriptUrlInput.value.trim()); }
-  function getScriptUrl()   { return localStorage.getItem(LS_SCRIPT_URL) || scriptUrlInput.value.trim(); }
+  function saveParties()  { localStorage.setItem(LS_PARTIES, JSON.stringify(parties)); }
+  function saveClientId() { localStorage.setItem(LS_CLIENT_ID, clientIdInput.value.trim()); }
+  function getClientId()  { return localStorage.getItem(LS_CLIENT_ID) || clientIdInput.value.trim(); }
   function escapeHtml(s) {
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
@@ -384,7 +390,7 @@
     settingsToggle.setAttribute('aria-expanded', String(hidden));
   });
 
-  scriptUrlInput.addEventListener('change', saveScriptUrl);
+  clientIdInput.addEventListener('change', saveClientId);
 
   function getSlotsForDate(dateStr) {
     const day = new Date(dateStr + 'T00:00:00').getDay();
@@ -434,18 +440,43 @@
   }
   partySelect.addEventListener('change', updateTitlePreview);
 
-  async function insertCalendarEvent(title, dateStr, startTime, endTime) {
-    const url = getScriptUrl();
-    if (!url) throw new Error('NO_SCRIPT_URL');
-    const params = new URLSearchParams({
-      title,
-      start: `${dateStr}T${startTime}:00+09:00`,
-      end:   `${dateStr}T${endTime}:00+09:00`
+  function ensureTokenClient() {
+    const clientId = getClientId();
+    if (!clientId) throw new Error('NO_CLIENT_ID');
+    if (!tokenClient || tokenClient.__clientId !== clientId) {
+      tokenClient = google.accounts.oauth2.initTokenClient({ client_id: clientId, scope: SCOPE, callback: () => {} });
+      tokenClient.__clientId = clientId;
+    }
+  }
+
+  function getAccessToken() {
+    return new Promise((resolve, reject) => {
+      try { ensureTokenClient(); } catch(e) { reject(e); return; }
+      tokenClient.callback = (resp) => {
+        if (resp.error) { reject(resp); return; }
+        accessToken = resp.access_token; resolve(accessToken);
+      };
+      tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' });
     });
-    const res = await fetch(`${url}?${params}`);
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'SCRIPT_ERROR');
-    return data;
+  }
+
+  async function insertCalendarEvent(title, dateStr, startTime, endTime) {
+    const token = await getAccessToken();
+    const calId = encodeURIComponent(CALENDAR_ID);
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        summary: title,
+        start: { dateTime: `${dateStr}T${startTime}:00`, timeZone: TIMEZONE },
+        end:   { dateTime: `${dateStr}T${endTime}:00`,   timeZone: TIMEZONE }
+      })
+    });
+    if (!res.ok) {
+      const err = new Error('CALENDAR_API_ERROR');
+      err.detail = await res.text(); err.status = res.status; throw err;
+    }
+    return res.json();
   }
 
   partyForm.addEventListener('submit', async (e) => {
@@ -456,8 +487,8 @@
       statusMsg.textContent = '파티를 먼저 선택하거나 추가해주세요.';
       statusMsg.className = 'err'; return;
     }
-    if (!getScriptUrl()) {
-      statusMsg.textContent = '⚙️ 설정에서 Apps Script URL을 먼저 입력해주세요.';
+    if (!getClientId()) {
+      statusMsg.textContent = '⚙️ 설정에서 구글 OAuth 클라이언트 ID를 먼저 입력해주세요.';
       statusMsg.className = 'err';
       settingsPanel.hidden = false; settingsToggle.setAttribute('aria-expanded', 'true'); return;
     }
@@ -472,18 +503,21 @@
     submitLabel.textContent = '등록 중…';
 
     try {
-      await insertCalendarEvent(title, dateInput.value, slot.start, slot.end);
+      const result = await insertCalendarEvent(title, dateInput.value, slot.start, slot.end);
       party.count = nextCount;
       saveParties(); renderPartyManager(); renderPartySelect();
       partySelect.value = idx; updateTitlePreview();
       statusMsg.className = 'ok';
-      statusMsg.textContent = `"${title}" 등록 완료 ✓`;
+      statusMsg.innerHTML = `"${escapeHtml(title)}" 등록 완료` +
+        (result.htmlLink ? ` · <a href="${result.htmlLink}" target="_blank" rel="noopener">캘린더에서 보기 →</a>` : '');
     } catch(err) {
       statusMsg.className = 'err';
-      if (err?.message === 'NO_SCRIPT_URL') {
-        statusMsg.textContent = '⚙️ 설정에서 Apps Script URL을 먼저 입력해주세요.';
+      if (err?.message === 'NO_CLIENT_ID') {
+        statusMsg.textContent = '⚙️ 설정에서 구글 OAuth 클라이언트 ID를 먼저 입력해주세요.';
+      } else if (err?.error === 'popup_closed_by_user') {
+        statusMsg.textContent = '로그인 창이 닫혔어요. 다시 시도해주세요.';
       } else {
-        statusMsg.textContent = '등록하지 못했어요. Apps Script URL과 배포 설정을 확인해주세요.';
+        statusMsg.textContent = '등록하지 못했어요. 클라이언트 ID와 승인된 도메인 설정을 확인해주세요.';
         console.error(err);
       }
     } finally {
