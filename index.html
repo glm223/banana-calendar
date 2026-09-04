@@ -7,18 +7,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>* { font-family: 'Noto Sans KR', -apple-system, sans-serif !important; }</style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root {
-    --bg: #F7F7F8;
+    --bg: #FFFEF5;
     --surface: #FFFFFF;
-    --border: #E4E4E7;
-    --border-focus: #A1A1AA;
+    --border: #F0EBD0;
+    --border-focus: #E2C84B;
     --text: #18181B;
-    --text-sub: #71717A;
-    --text-placeholder: #A1A1AA;
-    --accent: #3F3F46;
-    --accent-hover: #27272A;
+    --text-sub: #78716C;
+    --text-placeholder: #C4B87A;
+    --accent: #F0C330;
+    --accent-hover: #DEB020;
+    --accent-text: #18181B;
     --danger: #EF4444;
     --success: #16A34A;
     --radius-sm: 8px;
@@ -134,7 +136,7 @@
 
   .btn-sm {
     padding: 8px 12px; font-size: 13px; font-weight: 600;
-    background: var(--accent); color: #fff; border: none;
+    background: var(--accent); color: var(--accent-text); border: none;
     border-radius: var(--radius-sm); cursor: pointer;
     font-family: inherit; white-space: nowrap;
     transition: background 0.15s;
@@ -163,7 +165,7 @@
     line-height: 1.5;
   }
   .slot-option:hover { border-color: var(--border-focus); color: var(--text); }
-  .slot-option.selected { border-color: var(--text); background: var(--text); color: #fff; }
+  .slot-option.selected { border-color: var(--accent-hover); background: var(--accent); color: var(--accent-text); }
   .slot-fixed {
     padding: 10px 12px; background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -180,7 +182,7 @@
 
   .submit-btn {
     width: 100%; margin-top: 24px; padding: 13px;
-    background: var(--text); color: #fff; font-size: 14px;
+    background: var(--accent); color: var(--accent-text); font-size: 14px;
     font-weight: 700; font-family: inherit; border: none;
     border-radius: var(--radius-md); cursor: pointer;
     transition: background 0.15s, transform 0.08s, opacity 0.15s;
@@ -283,9 +285,10 @@
 (function(){
   const LS_CLIENT_ID = 'bp_client_id';
   const LS_PARTIES   = 'bp_parties';
-  const TITLE_PREFIX = '보드에바나나';
-  const TIMEZONE     = 'Asia/Seoul';
-  const SCOPE        = 'https://www.googleapis.com/auth/calendar.events';
+  const TITLE_PREFIX  = '보드에바나나';
+  const TIMEZONE      = 'Asia/Seoul';
+  const SCOPE         = 'https://www.googleapis.com/auth/calendar.events';
+  const CALENDAR_ID   = 'b2fafc4sji8pj9mh4i0htouks4@group.calendar.google.com';
 
   let parties = JSON.parse(localStorage.getItem(LS_PARTIES) || '[]');
   let selectedSlotIndex = 0;
@@ -459,7 +462,8 @@
 
   async function insertCalendarEvent(title, dateStr, startTime, endTime) {
     const token = await getAccessToken();
-    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+    const calId = encodeURIComponent(CALENDAR_ID);
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
